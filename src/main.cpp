@@ -1,6 +1,7 @@
 #include <iostream>
+#include "parser.h"
 
-extern int yyparse();
+extern "C" int yyparse(void);
 
 int main() {
     yyparse();
