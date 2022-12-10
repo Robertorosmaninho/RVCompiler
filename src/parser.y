@@ -55,8 +55,8 @@ pgm:
 ;
 
 exp:
-    INT                       { $$ = $1; }
-|   LP exp RP                 { $$ = $2; }
+    INT                     { $$ = $1; }
+|   LP exp RP               { $$ = $2; }
 |   SUB exp      %prec NEG  { $$ = new UnaryExprAST('-', std::make_unique<ExprAST>(*$2)); }
 |   exp ADD exp             { $$ = new BinaryExprAST('+', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
 |   exp SUB exp             { $$ = new BinaryExprAST('-', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
