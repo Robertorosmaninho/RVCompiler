@@ -22,16 +22,15 @@ class NumberExprAST : public ExprAST {
 public:
   NumberExprAST(long Num) : Num(Num) {}
   llvm::Value *codegen() override;
-  long long getNum() const { return Num; }
 };
 
 /// UnaryExprAST - Expression class for a the unary operator ("-": NEG)
 class UnaryExprAST : public ExprAST {
   char Op;
-  std::unique_ptr<ExprAST> RHS;
+  ExprAST *RHS;
 
 public:
-  UnaryExprAST(char op, std::unique_ptr<ExprAST> RHS)
+  UnaryExprAST(char op, ExprAST *RHS)
     : Op(op), RHS(std::move(RHS)) {}
   llvm::Value *codegen() override;
 };
@@ -39,11 +38,10 @@ public:
 /// BinaryExprAST - Expression class for a binary operators.
 class BinaryExprAST : public ExprAST {
   char Op;
-  std::unique_ptr<ExprAST> LHS, RHS;
+  ExprAST *LHS, *RHS;
 
 public:
-  BinaryExprAST(char op, std::unique_ptr<ExprAST> LHS,
-                std::unique_ptr<ExprAST> RHS)
+  BinaryExprAST(char op, ExprAST *LHS, ExprAST *RHS)
     : Op(op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
   llvm::Value *codegen() override;
 };
@@ -53,14 +51,11 @@ public:
 /// We will use it only to call printf
 class CallExprAST : public ExprAST {
   std::string Callee;
-  std::unique_ptr<ExprAST> Arg;
+  ExprAST *Arg;
 
 public:
-  CallExprAST(const std::string &Callee, std::unique_ptr<ExprAST> Arg)
-    : Callee(Callee), Arg(std::move(Arg)) {}
+  CallExprAST(const std::string &Callee, ExprAST *Arg)
+    : Callee(Callee), Arg(std::move(Arg)) { }
   llvm::Value *codegen() override;
   std::string getCallee() const { return Callee; }
 };
-
-//NumberExprAST* exp = dynamic_cast<NumberExprAST*>($3);
-//printf("%lld\n", exp->getNum());

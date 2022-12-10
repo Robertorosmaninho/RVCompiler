@@ -41,27 +41,30 @@ CallExprAST *printCall; /* the top level root node of our Expr AST */
 %left MUL DIV
 %nonassoc NEG
 
-%start pgm
+%start input
 
 /* rules */
 %%
 input:
-|    pgm { printCall = $1; }
+|    pgm { printCall = $1; YYACCEPT; }
 ;
 
 pgm:
-    PRINT LP exp RP SEMICOLON EOL {
-        $$ = new CallExprAST(*$1, std::make_unique<ExprAST>(*$3))  }
+    PRINT LP exp RP SEMICOLON EOL { $$ = new CallExprAST(*$1, $3); }
 ;
 
 exp:
     INT                     { $$ = $1; }
 |   LP exp RP               { $$ = $2; }
-|   SUB exp      %prec NEG  { $$ = new UnaryExprAST('-', std::make_unique<ExprAST>(*$2)); }
-|   exp ADD exp             { $$ = new BinaryExprAST('+', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
-|   exp SUB exp             { $$ = new BinaryExprAST('-', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
-|   exp MUL exp             { $$ = new BinaryExprAST('*', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
-|   exp DIV exp             { $$ = new BinaryExprAST('/', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
+|   SUB exp      %prec NEG  { $$ = new UnaryExprAST('-', $2); }
+
+|   exp ADD exp             { $$ = new BinaryExprAST('+', $1, $3); }
+
+|   exp SUB exp             { $$ = new BinaryExprAST('-', $1, $3); }
+
+|   exp MUL exp             { $$ = new BinaryExprAST('*', $1, $3); }
+
+|   exp DIV exp             { $$ = new BinaryExprAST('/', $1, $3); }
 ;
 
 %%
@@ -71,5 +74,3 @@ int yyerror(const char* err) {
 
     return 0;
 }
-
-
