@@ -1,7 +1,8 @@
 #include <iostream>
-#include "parser.h"
+#include "node.h"
 
-extern "C" int yyparse(void);
+extern CallExprAST *printCall;
+extern int yyparse(void);
 
 int main() {
     yyparse();

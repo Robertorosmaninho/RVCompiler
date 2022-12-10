@@ -1,13 +1,14 @@
 /* definitions */
 %{
-#include "parser.h"
+#include "node.h"
+#include "parser.hpp"
 %}
 
 %%
 
-[0-9]+           { yylval.num = atoi(yytext); return INT; }
+[0-9]+           { yylval.numAST = new NumberExprAST(atoll(yytext)); return INT; }
+"print"          { yylval.string = new std::string(yytext, yyleng); return PRINT; }
 
-"print"          { return PRINT; }
 "("              { return LP; }
 "*"              { return MUL; }
 "/"              { return DIV; }
@@ -18,7 +19,7 @@
 
 [ \t]            { }
 \n               { return EOL; }
-.                { printf("Unkown character: %s\n", yytext); }
+.                { printf("Unkown character: %s\n", yytext); } yyterminate();
 
 %%
 

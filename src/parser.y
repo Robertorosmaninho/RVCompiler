@@ -2,20 +2,28 @@
 %{
 
 #include "stdint.h"
+#include "node.h"
 
 int yyerror(const char *);
 int yylex();
 
+CallExprAST *printCall; /* the top level root node of our Expr AST */
+
 %}
 
 %union {
-    uint64_t num;
+    CallExprAST *printCall;
+    NumberExprAST *numAST;
+    ExprAST *exprAST;
+    std::string *string;
 }
 
-%token<num> INT
-%type<num> exp
+%token<numAST> INT
 
-%token PRINT
+%type<exprAST> exp
+%type<printCall> input pgm
+
+%token<string> PRINT
 %token LP
 %token RP
 
@@ -33,25 +41,27 @@ int yylex();
 %left MUL DIV
 %nonassoc NEG
 
+%start pgm
+
 /* rules */
 %%
-
 input:
-|   pgm input
+|    pgm { printCall = $1; }
 ;
 
 pgm:
-    PRINT LP exp RP SEMICOLON EOL { printf("%lld\n", $3); }
+    PRINT LP exp RP SEMICOLON EOL {
+        $$ = new CallExprAST(*$1, std::make_unique<ExprAST>(*$3))  }
 ;
 
 exp:
     INT                       { $$ = $1; }
 |   LP exp RP                 { $$ = $2; }
-|   SUB exp      %prec NEG    { $$ = -$2; }
-|   exp ADD exp               { $$ = $1 + $3; }
-|   exp SUB exp               { $$ = $1 - $3; }
-|   exp MUL exp               { $$ = $1 * $3; }
-|   exp DIV exp               { $$ = $1 / $3; }
+|   SUB exp      %prec NEG  { $$ = new UnaryExprAST('-', std::make_unique<ExprAST>(*$2)); }
+|   exp ADD exp             { $$ = new BinaryExprAST('+', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
+|   exp SUB exp             { $$ = new BinaryExprAST('-', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
+|   exp MUL exp             { $$ = new BinaryExprAST('*', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
+|   exp DIV exp             { $$ = new BinaryExprAST('/', std::make_unique<ExprAST>(*$1), std::make_unique<ExprAST>(*$3)); }
 ;
 
 %%
@@ -61,4 +71,5 @@ int yyerror(const char* err) {
 
     return 0;
 }
+
 
