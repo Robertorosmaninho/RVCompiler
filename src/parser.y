@@ -2,10 +2,12 @@
 %{
 
 #include "stdint.h"
+#include <FlexLexer.h>
 #include "include/node.h"
 
 int yyerror(const char *);
-int yylex();
+auto lexer = new yyFlexLexer();
+#define yylex() lexer->yylex();
 
 CallExprAST *printCall; /* the top level root node of our Expr AST */
 

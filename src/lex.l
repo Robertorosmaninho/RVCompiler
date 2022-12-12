@@ -4,6 +4,8 @@
 #include "parser.hpp"
 %}
 
+%option c++
+
 %%
 
 [0-9]+           { yylval.numAST = new NumberExprAST(atoll(yytext)); return INT; }
@@ -22,5 +24,5 @@
 
 %%
 
-int yywrap() { return 0; }
+int yyFlexLexer::yywrap() { return 0; }
 

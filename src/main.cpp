@@ -1,12 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <cassert>
+#include "FlexLexer.h"
 #include "include/codegen.h"
 
 extern CallExprAST *printCall;
-typedef struct yy_buffer_state * YY_BUFFER_STATE;
-extern YY_BUFFER_STATE yy_scan_string(const char *str);
-extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
+extern  yyFlexLexer *lexer;
 
 extern int yyparse();
 
@@ -35,20 +34,13 @@ int main(int argc, char *argv[]) {
     if (!inputFile)
         std::cout << "Error opening file!\n";
 
-    // Reading the program's single line.
-    std::string programLine;
-    getline(inputFile, programLine);
-
-    inputFile.close();
-
-    // Creating a buffer containing the program. This buffer will be parsers input instead of the stdin.
-    YY_BUFFER_STATE buffer = yy_scan_string(programLine.c_str());
+    // Telling the lexer to scan from the input file.
+    lexer->yyrestart(inputFile);
 
     // Parsing the program.
     yyparse();
 
-    // Deleting buffer to avoid memory leak.
-    yy_delete_buffer(buffer);
+    inputFile.close();
 
     // Checking if our program was correctly parsed and the AST created.
     if (printCall == nullptr)
