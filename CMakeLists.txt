@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(RVCompiler)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 ## Flex/Bison configuration
 find_package(BISON REQUIRED)
@@ -27,20 +28,24 @@ else()
     set (ADDITIONAL_FLEX_FLAGS "")
 endif()
 
-FLEX_TARGET(LEXER ${CMAKE_CURRENT_SOURCE_DIR}/src/lex.l
-${CMAKE_CURRENT_BINARY_DIR}/lexer.cpp DEFINES_FILE ${CMAKE_CURRENT_BINARY_DIR}/lexer.h COMPILE_FLAGS ${ADDITIONAL_FLEX_FLAGS})
 BISON_TARGET(PARSER ${CMAKE_CURRENT_SOURCE_DIR}/src/parser.y
-${CMAKE_CURRENT_BINARY_DIR}/parser.cpp COMPILE_FLAGS "-d -t")
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/parser.cpp DEFINES_FILE
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/parser.hpp COMPILE_FLAGS "-d -t")
+
+FLEX_TARGET(LEXER ${CMAKE_CURRENT_SOURCE_DIR}/src/lex.l
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/lexer.cpp DEFINES_FILE
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/lexer.h COMPILE_FLAGS
+        ${ADDITIONAL_FLEX_FLAGS})
 
 ADD_FLEX_BISON_DEPENDENCY(LEXER PARSER)
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/lib
+        ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 
-# FIXME
 file(GLOB source_files
-    ${CMAKE_CURRENT_BINARY_DIR}/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/codegen.cpp
 )
 
 add_executable(${PROJECT_NAME} ${source_files}

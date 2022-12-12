@@ -2,7 +2,7 @@
 %{
 
 #include "stdint.h"
-#include "node.h"
+#include "include/node.h"
 
 int yyerror(const char *);
 int yylex();
@@ -35,8 +35,6 @@ CallExprAST *printCall; /* the top level root node of our Expr AST */
 %token DIV
 %token NEG
 
-%token EOL
-
 %left ADD SUB
 %left MUL DIV
 %nonassoc NEG
@@ -46,24 +44,20 @@ CallExprAST *printCall; /* the top level root node of our Expr AST */
 /* rules */
 %%
 input:
-|    pgm { printCall = $1; YYACCEPT; }
+    pgm { printCall = $1; YYACCEPT; }
 ;
 
 pgm:
-    PRINT LP exp RP SEMICOLON EOL { $$ = new CallExprAST(*$1, $3); }
+    PRINT LP exp RP SEMICOLON { $$ = new CallExprAST(*$1, $3); }
 ;
 
 exp:
     INT                     { $$ = $1; }
 |   LP exp RP               { $$ = $2; }
 |   SUB exp      %prec NEG  { $$ = new UnaryExprAST('-', $2); }
-
 |   exp ADD exp             { $$ = new BinaryExprAST('+', $1, $3); }
-
 |   exp SUB exp             { $$ = new BinaryExprAST('-', $1, $3); }
-
 |   exp MUL exp             { $$ = new BinaryExprAST('*', $1, $3); }
-
 |   exp DIV exp             { $$ = new BinaryExprAST('/', $1, $3); }
 ;
 

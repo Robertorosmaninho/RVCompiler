@@ -1,27 +1,4 @@
-#include "llvm/ADT/APInt.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Verifier.h"
-#include <algorithm>
-#include <cctype>
-#include <cstdio>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
-#include <llvm/Support/raw_ostream.h>
-
-#include "codegen.h"
-
-#include "llvm/IR/Value.h"
+#include "include/codegen.h"
 
 using namespace llvm;
 
@@ -35,12 +12,10 @@ Value *LogErrorV(const char *Str) {
 }
 
 Value *NumberExprAST::codegen() {
-  llvm::errs() << "Codegen for NumberExprAST\n";
   return ConstantInt::get(*TheContext, APInt(64, Num, true)); // 64bits signed int
 }
 
 Value *UnaryExprAST::codegen() {
-  llvm::errs() << "Codegen for UnaryExprAST\n";
   Value *R = RHS->codegen();
   if (!R)
     return nullptr;
@@ -52,7 +27,6 @@ Value *UnaryExprAST::codegen() {
 }
 
 Value *BinaryExprAST::codegen() {
-  llvm::errs() << "Codegen for BinaryExprAST\n";
   Value *L = LHS->codegen();
   Value *R = RHS->codegen();
   if (!L || !R)
@@ -65,39 +39,43 @@ Value *BinaryExprAST::codegen() {
     return Builder->CreateSub(L, R, "subtmp");
   case '*':
     return Builder->CreateMul(L, R, "multmp");
-  case '/':
-    return Builder->CreateSDiv(L, R, "divtmp");
-
+  case '/': {
+      if(ConstantInt* CI = dyn_cast<ConstantInt>(R))
+          if (CI->isZero()) return LogErrorV("Division by 0 isn't allowed.");
+      return Builder->CreateSDiv(L, R, "divtmp");
+  }
   default:
     return LogErrorV("invalid binary operator");
   }
 }
 
 Value *CallExprAST::codegen() {
-  llvm::errs() << "Codegen for CallExprAST\n";
   // Look up the name in the global module table.
 
   if (getCallee() != "print")
     return LogErrorV("Unknown function");
 
-  auto i32 = IntegerType::getInt32Ty(*TheContext);
+  auto i64 = Builder->getInt64Ty();
   auto i8_ptr = PointerType::get(Type::getInt8Ty(*TheContext), 0);
-  auto funcType = FunctionType::get(i32, i8_ptr, true);
+  auto funcType = FunctionType::get(i64, {i8_ptr}, true);
 
-  auto insert_point = Builder->GetInsertPoint();
   auto CalleeF = TheModule->getOrInsertFunction("printf", funcType);
 
   if (!CalleeF)
     return LogErrorV("Unknown function referenced");
 
-  std::vector<Value *> ArgsV;
-  ArgsV.push_back(Arg->codegen());
+  llvm::Value *formatStr = Builder->CreateGlobalStringPtr("%lld\n");
+  auto argValue = Arg->codegen();
 
-  return Builder->CreateCall(CalleeF, ArgsV, "calltmp");
+  if(!argValue)
+      return LogErrorV("Unknown argument for print.");
+
+  return Builder->CreateCall(CalleeF, {formatStr, argValue}, "calltmp");
 }
 
-CodeGenContext::CodeGenContext() {
-  llvm::errs() << "Initializing codegen context\n";
+CodeGenContext::CodeGenContext(llvm::raw_ostream *output) {
+  // Setting the output raw_stream to print the module
+  os = output;
 
   // Open a new context and module.
   TheContext = std::make_unique<LLVMContext>();
@@ -111,20 +89,20 @@ CodeGenContext::CodeGenContext() {
 
 /* Compile the AST into a module */
 void CodeGenContext::generateCode(CallExprAST& root) {
-    llvm::errs() << "Generating code...\n";
-
     /* Create the top level interpreter function to call as entry */
     FunctionType *ftype = FunctionType::get(Type::getVoidTy(*TheContext), false);
-    Function *mainFunction = Function::Create(ftype, GlobalValue::InternalLinkage, "main", TheModule.get());
+    Function *mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage, "main", TheModule.get());
     BasicBlock *bblock = BasicBlock::Create(*TheContext, "entry", mainFunction);
 
     // Setting the start point to write functions
     Builder->SetInsertPoint(bblock);
 
     // Emit bytecode for the toplevel block
-    root.codegen();
+    auto printFunction = root.codegen();
+    if(!printFunction)
+        return;
 
     ReturnInst::Create(*TheContext, bblock);
 
-    TheModule->print(errs(), nullptr);
+    TheModule->print(*os, nullptr);
 }

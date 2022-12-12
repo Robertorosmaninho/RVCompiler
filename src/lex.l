@@ -1,6 +1,6 @@
 /* definitions */
 %{
-#include "node.h"
+#include "include/node.h"
 #include "parser.hpp"
 %}
 
@@ -17,10 +17,10 @@
 ")"              { return RP; }
 ";"              { return SEMICOLON; }
 
-[ \t]            { }
-\n               { return EOL; }
+[ \t\n]          { }
 .                { printf("Unkown character: %s\n", yytext); } yyterminate();
 
 %%
 
 int yywrap() { return 0; }
+

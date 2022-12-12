@@ -37,3 +37,8 @@ cmake-build-debug
 
 #Clion Directories
 .idea
+
+#LLVM Outputs
+*.ll
+*.bc
+*.s

@@ -1,8 +1,5 @@
-#include <iostream>
-#include <memory>
-#include <vector>
+#include <utility>
 
-#include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 
 // FIXME: Try to Implement Visitor interface
@@ -20,7 +17,7 @@ class NumberExprAST : public ExprAST {
   long long Num;
 
 public:
-  NumberExprAST(long Num) : Num(Num) {}
+  explicit NumberExprAST(long Num) : Num(Num) {}
   llvm::Value *codegen() override;
 };
 
@@ -31,7 +28,7 @@ class UnaryExprAST : public ExprAST {
 
 public:
   UnaryExprAST(char op, ExprAST *RHS)
-    : Op(op), RHS(std::move(RHS)) {}
+    : Op(op), RHS(RHS) {}
   llvm::Value *codegen() override;
 };
 
@@ -42,7 +39,7 @@ class BinaryExprAST : public ExprAST {
 
 public:
   BinaryExprAST(char op, ExprAST *LHS, ExprAST *RHS)
-    : Op(op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+    : Op(op), LHS(LHS), RHS(RHS) {}
   llvm::Value *codegen() override;
 };
 
@@ -54,8 +51,8 @@ class CallExprAST : public ExprAST {
   ExprAST *Arg;
 
 public:
-  CallExprAST(const std::string &Callee, ExprAST *Arg)
-    : Callee(Callee), Arg(std::move(Arg)) { }
+  CallExprAST(std::string Callee, ExprAST *Arg)
+    : Callee(std::move(Callee)), Arg(Arg) { }
   llvm::Value *codegen() override;
   std::string getCallee() const { return Callee; }
 };
