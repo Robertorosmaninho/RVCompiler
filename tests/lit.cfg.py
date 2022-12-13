@@ -1,7 +1,7 @@
 import lit.formats
 import os
 
-config.name = "RV Compiler - LLVM IR Test"
+config.name = "RV Compiler Tests"
 config.test_format = lit.formats.ShTest(True)
 
 config.suffixes = ['.cpp']
