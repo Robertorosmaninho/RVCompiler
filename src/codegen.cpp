@@ -1,8 +1,9 @@
 #include "include/codegen.h"
+#include <llvm/IR/NoFolder.h>
 
 using namespace llvm;
 
-static std::unique_ptr<IRBuilder<>> Builder;
+static std::unique_ptr<IRBuilder<llvm::NoFolder>> Builder;
 static std::unique_ptr<LLVMContext> TheContext;
 static std::unique_ptr<Module> TheModule;
 
@@ -84,7 +85,7 @@ CodeGenContext::CodeGenContext(llvm::raw_ostream *output) {
   TheModule = std::make_unique<Module>("RV Module", *TheContext);
 
   // Create a new builder for the module.
-  Builder = std::make_unique<IRBuilder<>>(*TheContext);
+  Builder = std::make_unique<IRBuilder<NoFolder>>(*TheContext);
 }
 
 /* Compile the AST into a module */
