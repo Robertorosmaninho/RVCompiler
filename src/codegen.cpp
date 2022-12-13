@@ -1,7 +1,11 @@
 #include "include/codegen.h"
-#include <llvm/IR/NoFolder.h>
+#include "include/JIT.h"
+
+#include "llvm/IR/NoFolder.h"
+#include "llvm/Support/TargetSelect.h"
 
 using namespace llvm;
+using namespace llvm::orc;
 
 static std::unique_ptr<IRBuilder<llvm::NoFolder>> Builder;
 static std::unique_ptr<LLVMContext> TheContext;
@@ -13,7 +17,8 @@ Value *LogErrorV(const char *Str) {
 }
 
 Value *NumberExprAST::codegen() {
-  return ConstantInt::get(*TheContext, APInt(64, Num, true)); // 64bits signed int
+  return ConstantInt::get(*TheContext,
+                          APInt(64, Num, true)); // 64bits signed int
 }
 
 Value *UnaryExprAST::codegen() {
@@ -35,15 +40,16 @@ Value *BinaryExprAST::codegen() {
 
   switch (Op) {
   case '+':
-    return  Builder->CreateAdd(L, R, "addtmp");
+    return Builder->CreateAdd(L, R, "addtmp");
   case '-':
     return Builder->CreateSub(L, R, "subtmp");
   case '*':
     return Builder->CreateMul(L, R, "multmp");
   case '/': {
-      if(ConstantInt* CI = dyn_cast<ConstantInt>(R))
-          if (CI->isZero()) return LogErrorV("Division by 0 isn't allowed.");
-      return Builder->CreateSDiv(L, R, "divtmp");
+    if (ConstantInt *CI = dyn_cast<ConstantInt>(R))
+      if (CI->isZero())
+        return LogErrorV("Division by 0 isn't allowed.");
+    return Builder->CreateSDiv(L, R, "divtmp");
   }
   default:
     return LogErrorV("invalid binary operator");
@@ -68,8 +74,8 @@ Value *CallExprAST::codegen() {
   llvm::Value *formatStr = Builder->CreateGlobalStringPtr("%lld\n");
   auto argValue = Arg->codegen();
 
-  if(!argValue)
-      return LogErrorV("Unknown argument for print.");
+  if (!argValue)
+    return LogErrorV("Unknown argument for print.");
 
   return Builder->CreateCall(CalleeF, {formatStr, argValue}, "calltmp");
 }
@@ -89,21 +95,46 @@ CodeGenContext::CodeGenContext(llvm::raw_ostream *output) {
 }
 
 /* Compile the AST into a module */
-void CodeGenContext::generateCode(CallExprAST& root) {
-    /* Create the top level interpreter function to call as entry */
-    FunctionType *ftype = FunctionType::get(Type::getVoidTy(*TheContext), false);
-    Function *mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage, "main", TheModule.get());
-    BasicBlock *bblock = BasicBlock::Create(*TheContext, "entry", mainFunction);
+void CodeGenContext::generateCode(CallExprAST &root) {
+  /* Create the top level interpreter function to call as entry */
+  FunctionType *ftype = FunctionType::get(Type::getVoidTy(*TheContext), false);
+  Function *mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage,
+                                            "main", TheModule.get());
+  BasicBlock *bblock = BasicBlock::Create(*TheContext, "entry", mainFunction);
 
-    // Setting the start point to write functions
-    Builder->SetInsertPoint(bblock);
+  // Setting the start point to write functions
+  Builder->SetInsertPoint(bblock);
 
-    // Emit bytecode for the toplevel block
-    auto printFunction = root.codegen();
-    if(!printFunction)
-        return;
+  // Emit bytecode for the toplevel block
+  auto printFunction = root.codegen();
+  if (!printFunction)
+    return;
 
-    ReturnInst::Create(*TheContext, bblock);
+  ReturnInst::Create(*TheContext, bblock);
 
-    TheModule->print(*os, nullptr);
+  TheModule->print(*os, nullptr);
+}
+
+void CodeGenContext::runJIT() {
+  // Initializing data needed by TheJIT
+  InitializeNativeTarget();
+  InitializeNativeTargetAsmPrinter();
+
+  // Create an LLJIT instance.
+  auto rvJIT = JIT::create(TheModule, TheContext);
+
+  // Registering the printf function on the JIT.
+  rvJIT->registerSymbols([&](llvm::orc::MangleAndInterner interner) {
+    llvm::orc::SymbolMap symbolMap;
+    symbolMap[interner("printf")] =
+        llvm::JITEvaluatedSymbol::fromPointer(printf);
+    return symbolMap;
+  });
+
+  // Getting the main function address from the module to be executed.
+  auto mainAddr = rvJIT->lookup("main");
+  auto *mainFunc = mainAddr->toPtr<long long(void)>();
+
+  // Executing the main function.
+  mainFunc();
 }

@@ -27,8 +27,7 @@ class UnaryExprAST : public ExprAST {
   ExprAST *RHS;
 
 public:
-  UnaryExprAST(char op, ExprAST *RHS)
-    : Op(op), RHS(RHS) {}
+  UnaryExprAST(char op, ExprAST *RHS) : Op(op), RHS(RHS) {}
   llvm::Value *codegen() override;
 };
 
@@ -39,10 +38,9 @@ class BinaryExprAST : public ExprAST {
 
 public:
   BinaryExprAST(char op, ExprAST *LHS, ExprAST *RHS)
-    : Op(op), LHS(LHS), RHS(RHS) {}
+      : Op(op), LHS(LHS), RHS(RHS) {}
   llvm::Value *codegen() override;
 };
-
 
 /// CallExprAST - Expression class for function calls.
 /// We will use it only to call printf
@@ -52,7 +50,7 @@ class CallExprAST : public ExprAST {
 
 public:
   CallExprAST(std::string Callee, ExprAST *Arg)
-    : Callee(std::move(Callee)), Arg(Arg) { }
+      : Callee(std::move(Callee)), Arg(Arg) {}
   llvm::Value *codegen() override;
   std::string getCallee() const { return Callee; }
 };

@@ -4,11 +4,11 @@ project(RVCompiler)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
-## Flex/Bison configuration
+# Flex/Bison configuration
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
-## LLVM configuration
+# LLVM configuration
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
@@ -20,12 +20,12 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
-llvm_map_components_to_libnames(llvm_libs support core irreader)
+llvm_map_components_to_libnames(llvm_libs support core irreader executionengine orcjit native)
 
-if (WIN32)
-    set (ADDITIONAL_FLEX_FLAGS "--wincompat")
+if(WIN32)
+        set(ADDITIONAL_FLEX_FLAGS "--wincompat")
 else()
-    set (ADDITIONAL_FLEX_FLAGS "")
+        set(ADDITIONAL_FLEX_FLAGS "")
 endif()
 
 BISON_TARGET(PARSER ${CMAKE_CURRENT_SOURCE_DIR}/src/parser.y
@@ -42,17 +42,16 @@ ADD_FLEX_BISON_DEPENDENCY(LEXER PARSER)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/lib
         ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-
 file(GLOB source_files
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/codegen.cpp
 )
 
 add_executable(${PROJECT_NAME} ${source_files}
-    ${BISON_PARSER_OUTPUTS} ${FLEX_LEXER_OUTPUTS})
+        ${BISON_PARSER_OUTPUTS} ${FLEX_LEXER_OUTPUTS})
 
 # Link against LLVM libraries
-target_link_libraries(${PROJECT_NAME} ${llvm_libs})
+target_link_libraries(${PROJECT_NAME} ${llvm_libs} ${target})
 
 # Add Tests directory
 add_subdirectory(tests)
