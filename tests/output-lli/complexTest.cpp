@@ -1,4 +1,6 @@
 // RUN: %RVCompiler %inputs/complex.rv
 // RUN: lli complex.ll | FileCheck %s
-// XFAIL: *
+// XFAIL: * 
+
 // CHECK: 13
+
