@@ -18,10 +18,25 @@ cd build
 cmake .. -G Ninja
 ninja
 ```
+# Executing llvm-lit Tests
+```
+cd build
+ninja check
+```
 
-# Testing
+# Generating LLVM Bytecode
+```
+./RVCompiler complexTest.rv
+```
+
+# Executing program with RV-JIT
+
+```
+./RVCompiler complexTest.rv --jit
+```
+
+# Executing LLVM Bytecode with lli
 ```
 ./RVCompiler complexTest.rv
 lli complexTest.ll
 ```
-
