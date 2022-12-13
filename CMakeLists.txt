@@ -53,3 +53,6 @@ add_executable(${PROJECT_NAME} ${source_files}
 
 # Link against LLVM libraries
 target_link_libraries(${PROJECT_NAME} ${llvm_libs})
+
+# Add Tests directory
+add_subdirectory(tests)

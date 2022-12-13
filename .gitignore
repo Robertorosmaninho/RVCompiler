@@ -42,3 +42,6 @@ cmake-build-debug
 *.ll
 *.bc
 *.s
+
+# Python Cache
+__pycache__
