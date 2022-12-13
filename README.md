@@ -1,6 +1,20 @@
 # RVCompiler
 Runtime Verification - Test Assignment
 
+## Grammar
+```
+syntax Pgm ::= "print" "(" Exp ")" ";"
+syntax Exp ::= Int
+             | "(" Exp ")"
+             | "-" Exp
+             | Exp "*" Exp
+             | Exp "/" Exp
+             | Exp "+" Exp
+             | Exp "-" Exp
+syntax Int ::= r"[0-9]+"
+
+```
+
 # Requirements
 ```
 cmake version 3.22.3
