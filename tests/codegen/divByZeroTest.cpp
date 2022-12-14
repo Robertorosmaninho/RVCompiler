@@ -1,7 +1,7 @@
 // RUN: %RVCompiler %inputs/divByZero.rv && FileCheck %s < divByZero.ll
 
-// CHECK: ; ModuleID = 'RV Module'
-// CHECK-NEXT: source_filename = "RV Module"
+// CHECK: ; ModuleID = 'divByZero.rv'
+// CHECK-NEXT: source_filename = "divByZero.rv"
 // CHECK-EMPTY:
 // CHECK-NEXT: @0 = private unnamed_addr constant [6 x i8] c"%lld\0A\00", align 1
 // CHECK-EMPTY:

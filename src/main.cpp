@@ -48,13 +48,13 @@ int main(int argc, char *argv[]) {
   if (printCall == nullptr)
     std::cout << "Parsing Error!\n";
 
-  auto outputFile = getInputFileName(argv[1]) + ".ll";
+  auto outputFile = getInputFileName(argv[1]);
 
   // Initializing the output LLVM IR file.
   std::error_code EC;
-  llvm::raw_ostream *os = new raw_fd_ostream(outputFile, EC);
+  llvm::raw_ostream *os = new raw_fd_ostream(outputFile + ".ll", EC);
 
-  auto *irGen = new IRGen(os);
+  auto *irGen = new IRGen(os, outputFile + ".rv");
   irGen->generateCode(*printCall);
 
   if (argc > 2 && strcmp(argv[2], "--jit") == 0)

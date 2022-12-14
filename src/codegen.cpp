@@ -57,9 +57,8 @@ Value *BinaryExprAST::codegen() {
     return Builder->CreateSub(L, R, "subtmp");
   case '*':
     return Builder->CreateMul(L, R, "multmp");
-  case '/': {
+  case '/':
     return Builder->CreateSDiv(L, R, "divtmp");
-  }
   default:
     return LogError("invalid binary operator\n");
   }
@@ -88,7 +87,7 @@ Value *CallExprAST::codegen() {
   return Builder->CreateCall(CalleeF, {formatStr, argValue}, "calltmp");
 }
 
-IRGen::IRGen(llvm::raw_ostream *output) {
+IRGen::IRGen(llvm::raw_ostream *output, std::string filename) {
   // Setting the output raw_stream to print the module
   os = output;
 
@@ -96,7 +95,7 @@ IRGen::IRGen(llvm::raw_ostream *output) {
   TheContext = std::make_unique<LLVMContext>();
 
   // Creating the LLVM Module
-  TheModule = std::make_unique<Module>("RV Module", *TheContext);
+  TheModule = std::make_unique<Module>(filename, *TheContext);
 
   // Create a new builder for the module.
   Builder = std::make_unique<IRBuilder<NoFolder>>(*TheContext);

@@ -23,7 +23,7 @@ class IRGen {
   llvm::raw_ostream *os;
 
 public:
-  explicit IRGen(llvm::raw_ostream *os);
+  explicit IRGen(llvm::raw_ostream *os, std::string filename);
   void generateCode(CallExprAST &root);
   void runJIT();
 };
