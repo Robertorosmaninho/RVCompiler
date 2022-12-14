@@ -4,6 +4,7 @@
 #include <memory>
 #include <type_traits>
 
+// Make the JIT safe
 static ExitOnError ExitOnErr;
 
 class JIT {
@@ -13,6 +14,7 @@ private:
 public:
   JIT(std::unique_ptr<llvm::orc::LLJIT> _rvjit) : rvJIT(std::move(_rvjit)) {}
 
+  // Create the JIT with the given module and context.
   static llvm::Expected<JIT>
   create(std::unique_ptr<llvm::Module> &module,
          std::unique_ptr<llvm::LLVMContext> &context) {
@@ -25,6 +27,8 @@ public:
     return JIT(std::move(rvJIT));
   }
 
+  // Function to add symbols to the JIT session. In this case used to add
+  // printf.
   void registerSymbols(
       llvm::function_ref<llvm::orc::SymbolMap(llvm::orc::MangleAndInterner)>
           symbolMap) {
@@ -34,6 +38,7 @@ public:
             mainJitDylib.getExecutionSession(), rvJIT->getDataLayout())))));
   }
 
+  // Function used to get a function on the JIT to be executed.
   llvm::Expected<llvm::orc::ExecutorAddr> lookup(const std::string &name) {
     auto symbol = rvJIT->lookup(name);
 

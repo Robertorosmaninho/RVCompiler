@@ -2,6 +2,7 @@
 #include "include/JIT.h"
 
 #include "llvm/IR/NoFolder.h"
+#include "llvm/Support/Error.h"
 #include "llvm/Support/TargetSelect.h"
 
 using namespace llvm;
@@ -11,32 +12,28 @@ static std::unique_ptr<IRBuilder<llvm::NoFolder>> Builder;
 static std::unique_ptr<LLVMContext> TheContext;
 static std::unique_ptr<Module> TheModule;
 
-Value *LogErrorV(const char *Str) {
-  llvm::errs() << Str << "\n";
-  return nullptr;
-}
+Value *LogErrorV(const char *Str) { llvm_unreachable(Str); }
 
 Value *NumberExprAST::codegen() {
-  return ConstantInt::get(*TheContext,
-                          APInt(64, Num, true)); // 64bits signed int
+  return Builder->getInt(APInt(64, Num, true)); // 64bits signed int
 }
 
 Value *UnaryExprAST::codegen() {
   Value *R = RHS->codegen();
   if (!R)
-    return nullptr;
+    return LogErrorV("Unknown operand in unary expression\n");
 
   if (Op == '-')
     return Builder->CreateNeg(R, "negtmp");
   else
-    return LogErrorV("invalid unary operator");
+    return LogErrorV("invalid unary operator\n");
 }
 
 Value *BinaryExprAST::codegen() {
   Value *L = LHS->codegen();
   Value *R = RHS->codegen();
   if (!L || !R)
-    return nullptr;
+    return LogErrorV("Unknown operand in binary expression\n");
 
   switch (Op) {
   case '+':
@@ -46,21 +43,17 @@ Value *BinaryExprAST::codegen() {
   case '*':
     return Builder->CreateMul(L, R, "multmp");
   case '/': {
-    if (ConstantInt *CI = dyn_cast<ConstantInt>(R))
-      if (CI->isZero())
-        return LogErrorV("Division by 0 isn't allowed.");
     return Builder->CreateSDiv(L, R, "divtmp");
   }
   default:
-    return LogErrorV("invalid binary operator");
+    return LogErrorV("invalid binary operator\n");
   }
 }
 
 Value *CallExprAST::codegen() {
   // Look up the name in the global module table.
-
   if (getCallee() != "print")
-    return LogErrorV("Unknown function");
+    return LogErrorV("Unknown function\n");
 
   auto i64 = Builder->getInt64Ty();
   auto i8_ptr = PointerType::get(Type::getInt8Ty(*TheContext), 0);
@@ -69,13 +62,13 @@ Value *CallExprAST::codegen() {
   auto CalleeF = TheModule->getOrInsertFunction("printf", funcType);
 
   if (!CalleeF)
-    return LogErrorV("Unknown function referenced");
+    return LogErrorV("Unknown function referenced\n");
 
   llvm::Value *formatStr = Builder->CreateGlobalStringPtr("%lld\n");
   auto argValue = Arg->codegen();
 
   if (!argValue)
-    return LogErrorV("Unknown argument for print.");
+    return LogErrorV("Unknown argument for print.\n");
 
   return Builder->CreateCall(CalleeF, {formatStr, argValue}, "calltmp");
 }
@@ -110,7 +103,8 @@ void CodeGenContext::generateCode(CallExprAST &root) {
   if (!printFunction)
     return;
 
-  ReturnInst::Create(*TheContext, bblock);
+  // Creating void return instruction
+  Builder->CreateRetVoid();
 
   TheModule->print(*os, nullptr);
 }
