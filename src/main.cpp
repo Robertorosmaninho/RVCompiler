@@ -1,3 +1,5 @@
+
+
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -52,11 +54,11 @@ int main(int argc, char *argv[]) {
   std::error_code EC;
   llvm::raw_ostream *os = new raw_fd_ostream(outputFile, EC);
 
-  auto *context = new CodeGenContext(os);
-  context->generateCode(*printCall);
+  auto *irGen = new IRGen(os);
+  irGen->generateCode(*printCall);
 
   if (argc > 2 && strcmp(argv[2], "--jit") == 0)
-    context->runJIT();
+    irGen->runJIT();
 
   return 0;
 }

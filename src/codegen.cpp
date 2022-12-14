@@ -1,5 +1,20 @@
+//===- FileCheck.cpp - Check that File's Contents match what is expected --===//
+//
+//                  Runtime Verification - Test Assignment
+//
+//===----------------------------------------------------------------------===//
+// Author: Roberto Rosmaninho
+// Last change: 14/12/22
+//
+// This file contains the definitions of the codegen Node functions and the
+// definitions of IRGen functions.
+//
+// This file initiates all the required information for code generation and for
+// calling the JIT compilation.
+//===----------------------------------------------------------------------===//
+
 #include "include/codegen.h"
-#include "include/JIT.h"
+#include "include/jit.h"
 
 #include "llvm/IR/NoFolder.h"
 #include "llvm/Support/Error.h"
@@ -12,7 +27,7 @@ static std::unique_ptr<IRBuilder<llvm::NoFolder>> Builder;
 static std::unique_ptr<LLVMContext> TheContext;
 static std::unique_ptr<Module> TheModule;
 
-Value *LogErrorV(const char *Str) { llvm_unreachable(Str); }
+Value *LogError(const char *Str) { llvm_unreachable(Str); }
 
 Value *NumberExprAST::codegen() {
   return Builder->getInt(APInt(64, Num, true)); // 64bits signed int
@@ -21,19 +36,19 @@ Value *NumberExprAST::codegen() {
 Value *UnaryExprAST::codegen() {
   Value *R = RHS->codegen();
   if (!R)
-    return LogErrorV("Unknown operand in unary expression\n");
+    return LogError("Unknown operand in unary expression\n");
 
   if (Op == '-')
     return Builder->CreateNeg(R, "negtmp");
   else
-    return LogErrorV("invalid unary operator\n");
+    return LogError("invalid unary operator\n");
 }
 
 Value *BinaryExprAST::codegen() {
   Value *L = LHS->codegen();
   Value *R = RHS->codegen();
   if (!L || !R)
-    return LogErrorV("Unknown operand in binary expression\n");
+    return LogError("Unknown operand in binary expression\n");
 
   switch (Op) {
   case '+':
@@ -46,14 +61,14 @@ Value *BinaryExprAST::codegen() {
     return Builder->CreateSDiv(L, R, "divtmp");
   }
   default:
-    return LogErrorV("invalid binary operator\n");
+    return LogError("invalid binary operator\n");
   }
 }
 
 Value *CallExprAST::codegen() {
   // Look up the name in the global module table.
   if (getCallee() != "print")
-    return LogErrorV("Unknown function\n");
+    return LogError("Unknown function\n");
 
   auto i64 = Builder->getInt64Ty();
   auto i8_ptr = PointerType::get(Type::getInt8Ty(*TheContext), 0);
@@ -62,18 +77,18 @@ Value *CallExprAST::codegen() {
   auto CalleeF = TheModule->getOrInsertFunction("printf", funcType);
 
   if (!CalleeF)
-    return LogErrorV("Unknown function referenced\n");
+    return LogError("Unknown function referenced\n");
 
   llvm::Value *formatStr = Builder->CreateGlobalStringPtr("%lld\n");
   auto argValue = Arg->codegen();
 
   if (!argValue)
-    return LogErrorV("Unknown argument for print.\n");
+    return LogError("Unknown argument for print.\n");
 
   return Builder->CreateCall(CalleeF, {formatStr, argValue}, "calltmp");
 }
 
-CodeGenContext::CodeGenContext(llvm::raw_ostream *output) {
+IRGen::IRGen(llvm::raw_ostream *output) {
   // Setting the output raw_stream to print the module
   os = output;
 
@@ -88,7 +103,7 @@ CodeGenContext::CodeGenContext(llvm::raw_ostream *output) {
 }
 
 /* Compile the AST into a module */
-void CodeGenContext::generateCode(CallExprAST &root) {
+void IRGen::generateCode(CallExprAST &root) {
   /* Create the top level interpreter function to call as entry */
   FunctionType *ftype = FunctionType::get(Type::getVoidTy(*TheContext), false);
   Function *mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage,
@@ -109,7 +124,7 @@ void CodeGenContext::generateCode(CallExprAST &root) {
   TheModule->print(*os, nullptr);
 }
 
-void CodeGenContext::runJIT() {
+void IRGen::runJIT() {
   // Initializing data needed by TheJIT
   InitializeNativeTarget();
   InitializeNativeTargetAsmPrinter();
