@@ -16,8 +16,6 @@
 
 #include "llvm/IR/Verifier.h"
 
-// FIXME: Try to Implement Visitor interface
-
 /// ExprAST - Base class for all expression nodes.
 class ExprAST {
 public:
