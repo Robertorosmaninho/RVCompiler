@@ -1,0 +1,16 @@
+#
+# Usage:
+#   mamba env create --file=environment.yml -n RVCompiler
+
+name: RVCompiler
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.9
+  - llvmdev
+  - lit
+  - cmake
+  - ninja
+  - flex
+  - bison
